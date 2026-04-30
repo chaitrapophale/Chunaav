@@ -94,18 +94,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const contextValue = React.useMemo(() => ({
+    profile,
+    documents,
+    decisionState,
+    connectDigiLocker,
+    disconnectDigiLocker,
+    updateDocuments,
+    manualSetup,
+  }), [profile, documents, decisionState]);
+
   return (
-    <UserContext.Provider
-      value={{
-        profile,
-        documents,
-        decisionState,
-        connectDigiLocker,
-        disconnectDigiLocker,
-        updateDocuments,
-        manualSetup,
-      }}
-    >
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );

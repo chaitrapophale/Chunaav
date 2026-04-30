@@ -11,6 +11,13 @@ export interface DecisionState {
   aiContext: string;
 }
 
+/**
+ * Calculates the user's voting readiness score and current roadmap step.
+ * 
+ * @param profile - The user's profile information (age, location, etc.)
+ * @param documents - The user's document status (Aadhaar, Voter ID, etc.)
+ * @returns An object containing the readiness score, roadmap progress, and recommended actions.
+ */
 export const calculateDecisionState = (
   profile: UserProfile,
   documents: UserDocuments

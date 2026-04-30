@@ -12,12 +12,22 @@ import { ActionHub } from "@/components/ActionHub";
 import { ElectionTimeline } from "@/components/ElectionTimeline";
 import { ServicesSection } from "@/components/ServicesSection";
 import { HelplineSection } from "@/components/HelplineSection";
+import { GoogleAuth } from "@/components/GoogleAuth";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageCode } from "@/utils/translations";
 
+import { LoadingSkeleton } from "@/components/LoadingSkeleton";
+import { useState, useEffect } from "react";
+
 export default function Dashboard() {
   const { language, setLanguage, t } = useLanguage();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen pb-12">
@@ -33,7 +43,8 @@ export default function Dashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <GoogleAuth />
+            <div className="text-sm font-medium text-gray-500 dark:text-gray-400 hidden sm:inline">
               {(t as any).electionNavigator}
             </div>
             <select
@@ -67,57 +78,63 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <ActionHub />
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column (Main Journey) */}
-          <div className="lg:col-span-8 space-y-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <DigiLockerButton />
+        {isInitialLoading ? (
+          <LoadingSkeleton />
+        ) : (
+          <>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+              <ActionHub />
             </motion.div>
 
-            <div id="doc-section" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <ScoreCard />
-              </motion.div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <InsightsCard />
-              </motion.div>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Column (Main Journey) */}
+              <div className="lg:col-span-8 space-y-8">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                  <DigiLockerButton />
+                </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Roadmap />
-            </motion.div>
+                <div id="doc-section" className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                    <ScoreCard />
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                    <InsightsCard />
+                  </motion.div>
+                </div>
 
-            <motion.div id="map-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-              <MapView />
-            </motion.div>
-            
-            <motion.div id="calendar-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <CalendarReminder />
-            </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Roadmap />
+                </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-              <ElectionTimeline />
-            </motion.div>
+                <motion.div id="map-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                  <MapView />
+                </motion.div>
+                
+                <motion.div id="calendar-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <CalendarReminder />
+                </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
-              <ServicesSection />
-            </motion.div>
-          </div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                  <ElectionTimeline />
+                </motion.div>
 
-          {/* Right Column (Assistant & Resources) */}
-          <div className="lg:col-span-4 space-y-8">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="sticky top-24">
-              <Chat />
-              <div className="mt-8">
-                <MisinfoBuster />
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+                  <ServicesSection />
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
-        </div>
+
+              {/* Right Column (Assistant & Resources) */}
+              <div className="lg:col-span-4 space-y-8">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="sticky top-24">
+                  <Chat />
+                  <div className="mt-8">
+                    <MisinfoBuster />
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Helpline Section */}

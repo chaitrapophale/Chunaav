@@ -1,11 +1,11 @@
 "use client";
-
+import React, { memo } from "react";
 import { useUser } from "../hooks/useUser";
 import { useLanguage } from "../context/LanguageContext";
 import { motion } from "framer-motion";
 import { CheckCircle2, Circle, AlertCircle, ShieldX } from "lucide-react";
 
-export const ScoreCard = () => {
+export const ScoreCard = memo(() => {
   const { decisionState, documents, updateDocuments } = useUser();
   const { t } = useLanguage();
 
@@ -35,7 +35,14 @@ export const ScoreCard = () => {
       </h3>
 
       <div className="flex flex-col items-center justify-center mb-8">
-        <div className="relative h-32 w-32 flex items-center justify-center">
+        <div 
+          className="relative h-32 w-32 flex items-center justify-center"
+          role="progressbar"
+          aria-valuenow={decisionState.readinessScore}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t.voterReadyScore}
+        >
           <svg className="w-full h-full transform -rotate-90">
             <circle
               cx="64"
@@ -86,6 +93,11 @@ export const ScoreCard = () => {
                 <div
                   key={key}
                   onClick={() => toggleDocument(key)}
+                  onKeyDown={(e) => e.key === 'Enter' && toggleDocument(key)}
+                  role="checkbox"
+                  aria-checked={hasDoc}
+                  tabIndex={0}
+                  aria-label={`Toggle ${label}`}
                   className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${
                     hasDoc
                       ? "bg-green-50/50 border-green-200 dark:bg-green-500/10 dark:border-green-500/20"
@@ -108,7 +120,7 @@ export const ScoreCard = () => {
       )}
 
       {isNotEligible && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3 text-center">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3 text-center" role="alert">
           <p className="text-sm text-red-700 dark:text-red-400 font-medium">
             {(t as any).underageMsg}
           </p>
@@ -119,4 +131,6 @@ export const ScoreCard = () => {
       )}
     </div>
   );
-};
+});
+
+ScoreCard.displayName = "ScoreCard";
