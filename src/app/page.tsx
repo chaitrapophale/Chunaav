@@ -12,7 +12,6 @@ import { ActionHub } from "@/components/ActionHub";
 import { ElectionTimeline } from "@/components/ElectionTimeline";
 import { ServicesSection } from "@/components/ServicesSection";
 import { HelplineSection } from "@/components/HelplineSection";
-import { GoogleAuth } from "@/components/GoogleAuth";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageCode } from "@/utils/translations";
@@ -43,7 +42,6 @@ export default function Dashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <GoogleAuth />
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400 hidden sm:inline">
               {(t as any).electionNavigator}
             </div>
