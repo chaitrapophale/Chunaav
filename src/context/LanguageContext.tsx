@@ -10,7 +10,7 @@ interface LanguageContextProps {
   hasSelectedLanguage: boolean;
 }
 
-const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
+export const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
 
 // Helper to deep merge translations so missing keys fallback to English
 const mergeTranslations = (base: any, target: any): any => {

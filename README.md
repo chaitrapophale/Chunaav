@@ -34,3 +34,22 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Testing
+
+This project uses **Jest** and **React Testing Library** for testing.
+
+### How to run tests
+
+```bash
+npm run test
+```
+
+### What is covered
+
+- **Decision Logic**: Tests for the eligibility engine and scoring system (`decisionEngine.test.ts`).
+- **AI Fallback**: Validation of Gemini AI responses and fallback mechanisms (`gemini.test.ts`).
+- **State Management**: Testing the `UserContext` and profile updates (`userContext.test.ts`).
+- **UI Components**: Unit tests for core components like `Chat`, `ScoreCard`, and `Roadmap`.
+- **Integration**: Basic flow testing of manual data entry and UI updates.
+
