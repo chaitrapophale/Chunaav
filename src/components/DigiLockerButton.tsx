@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "../hooks/useUser";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
+import { logger } from "../utils/logger";
 
 export const DigiLockerButton = () => {
   const { profile, disconnectDigiLocker } = useUser();
@@ -13,10 +13,12 @@ export const DigiLockerButton = () => {
   const router = useRouter();
 
   const handleConnect = () => {
+    logger.event("DIGILOCKER_CONNECT_CLICK");
     router.push("/connect-digilocker");
   };
 
   const handleDisconnect = () => {
+    logger.event("DIGILOCKER_DISCONNECT_CLICK");
     disconnectDigiLocker();
   };
 
@@ -26,15 +28,16 @@ export const DigiLockerButton = () => {
         <div className="flex items-center gap-3">
           <ShieldCheck className="text-green-500 h-6 w-6" />
           <div>
-            <p className="text-sm font-semibold text-green-700 dark:text-green-400">{(t as any).digilockerConnected}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{(t as any).verifiedAs} {profile.name}</p>
+            <p className="text-sm font-semibold text-green-700 dark:text-green-400">{t.digilockerConnected}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t.verifiedAs} {profile.name}</p>
           </div>
         </div>
         <button
           onClick={handleDisconnect}
+          aria-label="Disconnect DigiLocker"
           className="text-xs text-red-500 hover:text-red-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
         >
-          {(t as any).disconnect}
+          {t.disconnect}
         </button>
       </div>
     );
@@ -47,19 +50,24 @@ export const DigiLockerButton = () => {
         <div>
           <h3 className="font-bold text-gray-900 dark:text-white">{t.connectDigiLocker}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {(t as any).connectLockerDesc}
+            {t.connectLockerDesc}
           </p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleConnect}
+          aria-label="Connect with DigiLocker"
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
         >
           {t.connectSimulated}
         </motion.button>
         <button
-          onClick={() => router.push("/manual-setup")}
+          onClick={() => {
+            logger.event("MANUAL_SETUP_CLICK");
+            router.push("/manual-setup");
+          }}
+          aria-label="Continue with manual setup"
           className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mt-2 block w-full transition-colors"
         >
           {t.continueWithout}
@@ -71,3 +79,4 @@ export const DigiLockerButton = () => {
     </div>
   );
 };
+

@@ -1,15 +1,7 @@
-import { UserProfile, UserDocuments, mockAiResponses } from "./mockData";
+import { mockAiResponses } from "./mockData";
+import { UserProfile, UserDocuments, DecisionState } from "../types";
+import { logger } from "./logger";
 
-
-
-export interface DecisionState {
-  readinessScore: number;
-  roadmapStep: number;
-  urgentAction: string | null;
-  nextBestAction: string | null;
-  status: "eligible" | "not_eligible" | "pending";
-  aiContext: string;
-}
 
 /**
  * Calculates the user's voting readiness score and current roadmap step.
@@ -76,7 +68,7 @@ export const calculateDecisionState = (
   // Ensure score doesn't exceed 100
   readinessScore = Math.min(readinessScore, 100);
 
-  return {
+  const state: DecisionState = {
     readinessScore,
     roadmapStep,
     urgentAction,
@@ -84,4 +76,9 @@ export const calculateDecisionState = (
     status,
     aiContext,
   };
+
+  logger.event("DECISION_STATE_UPDATED", { score: readinessScore, status });
+
+  return state;
 };
+

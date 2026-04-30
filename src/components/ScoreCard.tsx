@@ -1,17 +1,20 @@
 "use client";
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { useUser } from "../hooks/useUser";
 import { useLanguage } from "../context/LanguageContext";
 import { motion } from "framer-motion";
-import { CheckCircle2, Circle, AlertCircle, ShieldX } from "lucide-react";
+import { CheckCircle2, Circle, ShieldX } from "lucide-react";
+import { logger } from "../utils/logger";
+import { UserDocuments } from "../types";
 
 export const ScoreCard = memo(() => {
   const { decisionState, documents, updateDocuments } = useUser();
   const { t } = useLanguage();
 
-  const toggleDocument = (doc: keyof typeof documents) => {
+  const toggleDocument = useCallback((doc: keyof UserDocuments) => {
+    logger.event("DOCUMENT_TOGGLED", { document: doc, status: !documents[doc] });
     updateDocuments({ [doc]: !documents[doc] });
-  };
+  }, [documents, updateDocuments]);
 
   const isNotEligible = decisionState.status === "not_eligible";
 
@@ -23,10 +26,10 @@ export const ScoreCard = memo(() => {
   };
 
   const docList = [
-    { key: "aadhaar", label: (t as any).aadhaarLabel },
-    { key: "voterId", label: (t as any).voterIdLabel },
-    { key: "drivingLicense", label: "Driving License" },
-  ] as const;
+    { key: "aadhaar" as const, label: t.aadhaarLabel || "Aadhaar Card" },
+    { key: "voterId" as const, label: t.voterIdLabel || "Voter ID (EPIC)" },
+    { key: "drivingLicense" as const, label: "Driving License" },
+  ];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-md">
@@ -71,7 +74,7 @@ export const ScoreCard = memo(() => {
             {isNotEligible ? (
               <div className="flex flex-col items-center">
                 <ShieldX className="h-6 w-6 text-red-500 mb-1" />
-                <span className="text-xs font-bold text-red-500 uppercase">{(t as any).notEligible}</span>
+                <span className="text-xs font-bold text-red-500 uppercase">{t.notEligible || "Not Eligible"}</span>
               </div>
             ) : (
               <span className="text-3xl font-black text-gray-800 dark:text-white">
@@ -88,7 +91,7 @@ export const ScoreCard = memo(() => {
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.docChecklist}</h4>
           <div className="space-y-2">
             {docList.map(({ key, label }) => {
-              const hasDoc = documents[key as keyof typeof documents];
+              const hasDoc = documents[key];
               return (
                 <div
                   key={key}
@@ -122,10 +125,10 @@ export const ScoreCard = memo(() => {
       {isNotEligible && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3 text-center" role="alert">
           <p className="text-sm text-red-700 dark:text-red-400 font-medium">
-            {(t as any).underageMsg}
+            {t.underageMsg || "You must be 18 to vote"}
           </p>
           <p className="text-xs text-red-500 dark:text-red-400/70 mt-1">
-            {(t as any).underageSubMsg}
+            {t.underageSubMsg || "Check back when you're eligible!"}
           </p>
         </div>
       )}
@@ -134,3 +137,4 @@ export const ScoreCard = memo(() => {
 });
 
 ScoreCard.displayName = "ScoreCard";
+

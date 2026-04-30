@@ -4,20 +4,32 @@ import { DigiLockerButton } from "@/components/DigiLockerButton";
 import { ScoreCard } from "@/components/ScoreCard";
 import { InsightsCard } from "@/components/InsightsCard";
 import { Roadmap } from "@/components/Roadmap";
-import { MapView } from "@/components/MapView";
 import { MisinfoBuster } from "@/components/MisinfoBuster";
 import { CalendarReminder } from "@/components/CalendarReminder";
-import { Chat } from "@/components/Chat";
 import { ActionHub } from "@/components/ActionHub";
 import { ElectionTimeline } from "@/components/ElectionTimeline";
 import { ServicesSection } from "@/components/ServicesSection";
 import { HelplineSection } from "@/components/HelplineSection";
+import { ElectionVideo } from "@/components/ElectionVideo";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageCode } from "@/utils/translations";
+import dynamic from "next/dynamic";
 
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 import { useState, useEffect } from "react";
+
+// Lazy load heavy components
+const Chat = dynamic(() => import("@/components/Chat").then(mod => mod.Chat), { 
+  loading: () => <div className="h-[500px] bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />,
+  ssr: false 
+});
+
+const MapView = dynamic(() => import("@/components/MapView").then(mod => mod.MapView), { 
+  loading: () => <div className="h-[400px] bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />,
+  ssr: false 
+});
+
 
 export default function Dashboard() {
   const { language, setLanguage, t } = useLanguage();
@@ -118,6 +130,10 @@ export default function Dashboard() {
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
                   <ServicesSection />
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                  <ElectionVideo />
                 </motion.div>
               </div>
 

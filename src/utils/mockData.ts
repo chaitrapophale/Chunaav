@@ -1,17 +1,4 @@
-export interface UserDocuments {
-  aadhaar: boolean;
-  voterId: boolean;
-  drivingLicense: boolean;
-  panCard: boolean;
-}
-
-export interface UserProfile {
-  name: string;
-  age: number | null;
-  location: string | null;
-  isFirstTimeVoter: boolean;
-  isConnected: boolean;
-}
+import { UserProfile, UserDocuments } from "../types";
 
 export const mockDigiLockerUser = {
   profile: {

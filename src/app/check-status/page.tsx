@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { Search, ArrowLeft, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 const mockResults: Record<string, { name: string; constituency: string; status: "registered" }> = {
   "ABC1234567": { name: "Ananya Deshmukh", constituency: "Mumbai North", status: "registered" },
@@ -22,8 +23,10 @@ export default function CheckStatusPage() {
   const [result, setResult] = useState<null | { name: string; constituency: string; status: string }>(null);
   const [checked, setChecked] = useState(false);
 
-  const handleCheck = async () => {
+  const handleCheck = useCallback(async () => {
     if (!epic.trim()) return;
+    
+    logger.event("EPIC_STATUS_CHECK", { epic: epic.trim().toUpperCase() });
     setLoading(true);
     setResult(null);
     setChecked(false);
@@ -44,14 +47,24 @@ export default function CheckStatusPage() {
     }
     setChecked(true);
     setLoading(false);
-  };
+  }, [epic, isHi]);
+
+  const handleRegisterNow = useCallback(() => {
+    logger.event("REGISTER_NOW_CLICK");
+    window.open("https://voters.eci.gov.in/", "_blank");
+  }, []);
+
+  const handleBack = useCallback(() => {
+    router.push("/");
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <button
-            onClick={() => router.push("/")}
+            onClick={handleBack}
+            aria-label="Back to home"
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -84,15 +97,17 @@ export default function CheckStatusPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="epic-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {isHi ? "EPIC नंबर" : "EPIC Number"}
               </label>
               <input
+                id="epic-input"
                 type="text"
                 value={epic}
                 onChange={(e) => setEpic(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && handleCheck()}
                 placeholder={isHi ? "उदा. ABC1234567" : "e.g. ABC1234567"}
+                aria-label="EPIC Number input"
                 className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg tracking-wider font-mono"
               />
             </div>
@@ -100,6 +115,7 @@ export default function CheckStatusPage() {
             <button
               onClick={handleCheck}
               disabled={!epic.trim() || loading}
+              aria-label="Check registration status"
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -155,7 +171,8 @@ export default function CheckStatusPage() {
               </div>
               {result.status !== "registered" && (
                 <button
-                  onClick={() => { alert("Redirecting to official Election Commission portal..."); window.open("https://voters.eci.gov.in/", "_blank"); }}
+                  onClick={handleRegisterNow}
+                  aria-label="Register Now on ECI portal"
                   className="mt-4 inline-flex items-center gap-2 bg-blue-600 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   {isHi ? "अभी पंजीकरण करें →" : "Register Now →"}
@@ -174,3 +191,4 @@ export default function CheckStatusPage() {
     </div>
   );
 }
+

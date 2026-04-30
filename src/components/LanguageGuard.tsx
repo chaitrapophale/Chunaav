@@ -4,6 +4,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Globe2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { LanguageCode } from "@/utils/translations";
+import { logger } from "@/utils/logger";
+
 
 const languages: { code: LanguageCode; name: string; local: string }[] = [
   { code: "en", name: "English", local: "English" },
@@ -51,9 +53,14 @@ export const LanguageGuard = ({ children }: { children: React.ReactNode }) => {
               key={lang.code}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setLanguage(lang.code)}
+              onClick={() => {
+                logger.event("LANGUAGE_SELECTED", { lang: lang.code });
+                setLanguage(lang.code);
+              }}
+              aria-label={`Select ${lang.name}`}
               className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 bg-gray-50 hover:bg-blue-50 dark:bg-gray-800/50 dark:hover:bg-blue-900/20 transition-all group"
             >
+
               <span className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1">
                 {lang.local}
               </span>

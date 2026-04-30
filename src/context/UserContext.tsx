@@ -1,8 +1,10 @@
 "use client";
 
-import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { UserProfile, UserDocuments, defaultUser } from "../utils/mockData";
-import { calculateDecisionState, DecisionState } from "../utils/decisionEngine";
+import React, { createContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
+import { defaultUser } from "../utils/mockData";
+import { calculateDecisionState } from "../utils/decisionEngine";
+import { UserProfile, UserDocuments, DecisionState } from "../types";
+import { logger } from "../utils/logger";
 
 // Dynamic mock names instead of hardcoded "Rahul Sharma"
 const mockNames = [
@@ -45,14 +47,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
 
   useEffect(() => {
-    setDecisionState(calculateDecisionState(profile, documents));
+    const newState = calculateDecisionState(profile, documents);
+    setDecisionState(newState);
   }, [profile, documents]);
 
-  const connectDigiLocker = () => {
+  const connectDigiLocker = useCallback(() => {
     // Pick a random name and location for realism
     const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
     const randomLocation = mockLocations[Math.floor(Math.random() * mockLocations.length)];
     const randomAge = 18 + Math.floor(Math.random() * 10); // 18-27
+
+    logger.event("USER_CONNECTED_DIGILOCKER", { name: randomName, age: randomAge });
 
     setProfile({
       name: randomName,
@@ -67,18 +72,20 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       drivingLicense: Math.random() > 0.3,
       panCard: Math.random() > 0.5,
     });
-  };
+  }, []);
 
-  const disconnectDigiLocker = () => {
+  const disconnectDigiLocker = useCallback(() => {
+    logger.event("USER_DISCONNECTED_DIGILOCKER");
     setProfile(defaultUser.profile);
     setDocuments(defaultUser.documents);
-  };
+  }, []);
 
-  const updateDocuments = (docs: Partial<UserDocuments>) => {
+  const updateDocuments = useCallback((docs: Partial<UserDocuments>) => {
     setDocuments((prev) => ({ ...prev, ...docs }));
-  };
+  }, []);
 
-  const manualSetup = (data: { age: number; location: string; hasAadhaar: boolean; hasVoterId: boolean }) => {
+  const manualSetup = useCallback((data: { age: number; location: string; hasAadhaar: boolean; hasVoterId: boolean }) => {
+    logger.event("USER_MANUAL_SETUP", { age: data.age, location: data.location });
     setProfile({
       name: "Voter",
       age: data.age,
@@ -92,9 +99,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       drivingLicense: false,
       panCard: false,
     });
-  };
+  }, []);
 
-  const contextValue = React.useMemo(() => ({
+  const contextValue = useMemo(() => ({
     profile,
     documents,
     decisionState,
@@ -102,7 +109,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     disconnectDigiLocker,
     updateDocuments,
     manualSetup,
-  }), [profile, documents, decisionState]);
+  }), [profile, documents, decisionState, connectDigiLocker, disconnectDigiLocker, updateDocuments, manualSetup]);
 
   return (
     <UserContext.Provider value={contextValue}>
@@ -110,3 +117,4 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     </UserContext.Provider>
   );
 };
+

@@ -1,14 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { mockAiResponses } from "./mockData";
 import { translations, LanguageCode } from "./translations";
+import { logger } from "./logger";
 
 const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-console.log("Gemini API Key:", apiKey ? "Present" : "Missing");
 
 // Only initialize the API client if a key is present
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const fallbackDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Simple in-memory cache for Gemini responses
+const responseCache = new Map<string, string>();
 
 // Language name mapping for system prompt
 const languageNames: Record<string, string> = {
@@ -24,12 +26,12 @@ const languageNames: Record<string, string> = {
   pa: "Punjabi",
 };
 
-const generateSmartFallback = (prompt: string, language: string, contextMessage: string) => {
+const generateSmartFallback = (prompt: string, language: string): string => {
   const msg = prompt.toLowerCase();
   const prefix = language !== "en" ? `[${languageNames[language] || language}] ` : "";
 
   if (msg.includes("registered") || msg.includes("status") || msg.includes("पंजीकृत") || msg.includes("स्थिति")) {
-    return prefix + "You can check your voter registration status using the 'Check Status' feature on the dashboard, or visit /check-status. Enter your EPIC number to verify instantly.";
+    return prefix + "You can check your voter registration status using the 'Check Status' feature on the dashboard, or visit https://voters.eci.gov.in/. Enter your EPIC number to verify instantly.";
   }
   if (msg.includes("register") || msg.includes("form 6") || msg.includes("how to") || msg.includes("how do i vote")) {
     return prefix + "To vote, you need to register first: 1) Visit https://voters.eci.gov.in/ 2) Fill Form 6 (New Voter Registration) 3) Upload Aadhaar, address proof, and passport photo 4) Submit and note your reference number. Once registered, you will get an EPIC (Voter ID) to vote at your local booth.";
@@ -55,23 +57,22 @@ export const getGeminiResponse = async (
   contextMessage: string,
   language: string
 ): Promise<string> => {
-  const langCode = (language as LanguageCode) || "en";
-  const t = (translations[langCode] || translations.en) as typeof translations.en;
+  const cacheKey = `${language}:${contextMessage}:${prompt}`;
   
-  const voterIdResponse = `${(t as any).voterIdStepsHeader}:\n\n${t.voterIdSteps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\n${(t as any).voterIdFooter}`;
+  if (responseCache.has(cacheKey)) {
+    logger.info("GEMINI_CACHE_HIT", { prompt: prompt.substring(0, 50) });
+    return responseCache.get(cacheKey)!;
+  }
 
-  // Localized AI fallbacks
-  const localizedMockResponses = {
-    missingVoterId: (t as any).missingVoterId || mockAiResponses.missingVoterId,
-    underage: (t as any).underage || mockAiResponses.underage,
-    ready: (t as any).ready || mockAiResponses.ready,
-    fallback: (t as any).fallbackAi || mockAiResponses.fallback
-  };
+  logger.event("GEMINI_API_REQUEST", { language, prompt_length: prompt.length });
 
   // ── Demo Mode (no API key) ──
   if (!apiKey || !genAI) {
+    logger.info("GEMINI_DEMO_MODE", { reason: !apiKey ? "MISSING_KEY" : "CLIENT_INIT_FAILED" });
     await fallbackDelay(800);
-    return generateSmartFallback(prompt, language, contextMessage);
+    const fallback = generateSmartFallback(prompt, language);
+    responseCache.set(cacheKey, fallback);
+    return fallback;
   }
 
   // ── Real Gemini API ──
@@ -95,10 +96,15 @@ USER QUESTION: ${prompt}`;
 
     const result = await model.generateContent(systemPrompt);
     const response = await result.response;
-    return response.text();
+    const text = response.text();
+    
+    responseCache.set(cacheKey, text);
+    logger.event("GEMINI_API_SUCCESS");
+    return text;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Graceful fallback to demo mode on error
-    return generateSmartFallback(prompt, language, contextMessage);
+    logger.error("GEMINI_API_FAILED", error);
+    const fallback = generateSmartFallback(prompt, language);
+    return fallback;
   }
 };
+

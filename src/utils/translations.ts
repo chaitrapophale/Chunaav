@@ -111,8 +111,13 @@ en: {
       "Upload required documents (Aadhaar, address proof, passport photo)",
       "Submit application and note the reference number",
       "Track status online using your reference number"
-    ]
+    ],
+    electionGuideVideo: "Election Awareness Guide",
+    videoCourtesy: "Official Awareness Video by Election Commission of India",
+    mapViewAvailable: "Map view available with API Key"
   },
+
+
 hi: {
     voterIdStepsHeader: "यहां बताया गया है कि अपना वोटर आईडी कैसे प्राप्त करें",
     voterIdFooter: "आप सीधे https://voters.eci.gov.in/ पर आवेदन कर सकते हैं - यह मुफ़्त है और इसमें लगभग 10 मिनट लगते हैं। प्रसंस्करण में आमतौर पर 2-4 सप्ताह लगते हैं।",

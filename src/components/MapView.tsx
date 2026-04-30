@@ -3,9 +3,10 @@
 import { useUser } from "../hooks/useUser";
 import { useLanguage } from "../context/LanguageContext";
 import { mockPollingBooth } from "../utils/mockData";
-import { MapPin, Navigation, Clock, User, Compass } from "lucide-react";
+import { MapPin, Navigation, Clock, Compass } from "lucide-react";
 import { APIProvider, Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { logger } from "../utils/logger";
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
@@ -21,7 +22,7 @@ export const MapView = () => {
   // Only show the map strongly if the user is at the "Find Polling Booth" step or later
   const isRelevant = decisionState.roadmapStep >= 4;
 
-  const calculateDistance = (pos: {lat: number, lng: number}) => {
+  const calculateDistance = useCallback((pos: {lat: number, lng: number}) => {
     // Simple Haversine formula
     const R = 6371; // km
     const dLat = (mockPollingBooth.lat - pos.lat) * Math.PI / 180;
@@ -34,11 +35,12 @@ export const MapView = () => {
     
     // Replace {dist} with the actual distance in the translated string
     const distStr = d.toFixed(1);
-    const msg = (t as any).nearestBoothDistance ? (t as any).nearestBoothDistance.replace("{dist}", distStr) : `Nearest polling booth is ${distStr} km away`;
+    const msg = t.nearestBoothDistance ? t.nearestBoothDistance.replace("{dist}", distStr) : `Nearest polling booth is ${distStr} km away`;
     setDistanceInfo(msg);
-  };
+    logger.event("MAP_DISTANCE_CALCULATED", { distance: d });
+  }, [t.nearestBoothDistance]);
 
-  const handleUseMyLocation = () => {
+  const handleUseMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
       return;
@@ -51,15 +53,17 @@ export const MapView = () => {
         setLocationInput("Current Location");
         calculateDistance(pos);
         setIsLocating(false);
+        logger.event("USER_LOCATION_DETECTED", { source: "geolocation" });
       },
       (error) => {
+        logger.error("GEOLOCATION_FAILED", error);
         alert("Unable to retrieve your location");
         setIsLocating(false);
       }
     );
-  };
+  }, [calculateDistance]);
 
-  const handleManualLocationSubmit = (e: React.FormEvent) => {
+  const handleManualLocationSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (locationInput.trim()) {
       // Mock geocoding: just put the user slightly offset from the polling booth
@@ -69,25 +73,27 @@ export const MapView = () => {
       };
       setUserLocation(mockPos);
       calculateDistance(mockPos);
+      logger.event("USER_LOCATION_DETECTED", { source: "manual" });
     }
-  };
+  }, [locationInput, calculateDistance]);
 
-  const handleDirections = () => {
+  const handleDirections = useCallback(() => {
+    logger.event("MAP_DIRECTIONS_CLICKED");
     const origin = userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : "";
     window.open(`https://www.google.com/maps/dir/?api=1${origin}&destination=${mockPollingBooth.lat},${mockPollingBooth.lng}`, "_blank");
-  };
+  }, [userLocation]);
 
-  const mapCenter = userLocation ? {
+  const mapCenter = useMemo(() => userLocation ? {
     lat: (userLocation.lat + mockPollingBooth.lat) / 2,
     lng: (userLocation.lng + mockPollingBooth.lng) / 2
-  } : { lat: mockPollingBooth.lat, lng: mockPollingBooth.lng };
+  } : { lat: mockPollingBooth.lat, lng: mockPollingBooth.lng }, [userLocation]);
 
   const StaticFallback = () => (
     <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700">
       <div className="text-center text-gray-500 dark:text-gray-400">
         <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">{(t as any).mapViewAvailable || "Map view available with API Key"}</p>
-        <p className="text-xs">{(t as any).locationLabel}: {mockPollingBooth.name}</p>
+        <p className="text-sm">{t.mapViewAvailable || "Map view available with API Key"}</p>
+        <p className="text-xs">{t.locationLabel}: {mockPollingBooth.name}</p>
       </div>
     </div>
   );
@@ -106,17 +112,19 @@ export const MapView = () => {
             type="text"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            placeholder={(t as any).enterLocation || "Enter your location"}
+            placeholder={t.enterLocation || "Enter your location"}
             className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Enter your location"
           />
           <button
             type="button"
             onClick={handleUseMyLocation}
             disabled={isLocating}
             className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1 whitespace-nowrap disabled:opacity-50"
+            aria-label="Use my location"
           >
             <Compass className={`h-4 w-4 ${isLocating ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{(t as any).useMyLocation || "Use My Location"}</span>
+            <span className="hidden sm:inline">{t.useMyLocation || "Use My Location"}</span>
           </button>
         </form>
         {distanceInfo && (
@@ -160,12 +168,13 @@ export const MapView = () => {
 
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md">
           <Clock className="h-4 w-4 text-blue-500" />
-          <span><span className="font-medium">{(t as any).bestTime}:</span> {mockPollingBooth.bestTime}</span>
+          <span><span className="font-medium">{t.bestTime}:</span> {mockPollingBooth.bestTime}</span>
         </div>
 
         <button
           onClick={handleDirections}
           className="w-full mt-2 bg-gray-900 hover:bg-black dark:bg-gray-100 dark:hover:bg-white text-white dark:text-gray-900 font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+          aria-label="Get directions to polling booth"
         >
           <Navigation className="h-4 w-4" /> {t.getDirections}
         </button>
@@ -173,3 +182,4 @@ export const MapView = () => {
     </div>
   );
 };
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { translations, LanguageCode } from "../utils/translations";
 
 interface LanguageContextProps {
@@ -45,17 +45,27 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     setMounted(true);
   }, []);
 
-  const setLanguage = (lang: LanguageCode) => {
+  const setLanguage = useCallback((lang: LanguageCode) => {
     setLanguageState(lang);
     setHasSelectedLanguage(true);
     localStorage.setItem("chunaav-lang", lang);
-  };
+  }, []);
 
   // Provide fallback to english using deep merge
-  const t = mergeTranslations(translations.en, translations[language]) as typeof translations.en;
+  const t = useMemo(() => 
+    mergeTranslations(translations.en, translations[language]) as typeof translations.en,
+    [language]
+  );
+
+  const contextValue = useMemo(() => ({
+    language,
+    setLanguage,
+    t,
+    hasSelectedLanguage
+  }), [language, setLanguage, t, hasSelectedLanguage]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, hasSelectedLanguage }}>
+    <LanguageContext.Provider value={contextValue}>
       <div style={{ visibility: mounted ? "visible" : "hidden", minHeight: "100vh" }}>
         {children}
       </div>
@@ -70,3 +80,4 @@ export const useLanguage = () => {
   }
   return context;
 };
+

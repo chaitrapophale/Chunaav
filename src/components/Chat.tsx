@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../hooks/useUser";
 import { useLanguage } from "../context/LanguageContext";
 import { getGeminiResponse } from "../utils/gemini";
 import { Send, Bot, User } from "lucide-react";
 import { motion } from "framer-motion";
-
-interface Message {
-  id: string;
-  sender: "user" | "bot";
-  text: string;
-}
+import { Message } from "../types";
+import { logger } from "../utils/logger";
 
 export const Chat = () => {
   const { decisionState, profile } = useUser();
@@ -37,8 +33,8 @@ export const Chat = () => {
       hasWelcomedRef.current = true;
 
       const greeting = profile.name && profile.name !== "Voter"
-        ? ((t as any).aiGreetingConnected || "Hi {name} 👋").replace("{name}", profile.name.split(" ")[0])
-        : ((t as any).aiGreetingManual || "Got it! 👋 Based on your details...");
+        ? (t.aiGreetingConnected || "Hi {name} 👋").replace("{name}", profile.name.split(" ")[0])
+        : (t.aiGreetingManual || "Got it! 👋 Based on your details...");
 
       setMessages((prev) => [
         ...prev,
@@ -49,7 +45,7 @@ export const Chat = () => {
         },
       ]);
     }
-  }, [profile.isConnected, decisionState.aiContext, profile.name]);
+  }, [profile.isConnected, decisionState.aiContext, profile.name, t.aiGreetingConnected, t.aiGreetingManual]);
 
   // Update initial greeting when language changes
   useEffect(() => {
@@ -65,10 +61,11 @@ export const Chat = () => {
   }, [messages, isLoading]);
 
   // 🔥 Handle user input PROPERLY
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const userText = input.trim();
+    logger.event("CHAT_MESSAGE_SENT", { length: userText.length });
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -95,19 +92,21 @@ export const Chat = () => {
           text: responseText,
         },
       ]);
+      logger.event("CHAT_RESPONSE_RECEIVED");
     } catch (error) {
+        logger.error("CHAT_ERROR", error);
         setMessages((prev) => [
           ...prev,
           {
             id: (Date.now() + 1).toString(),
             sender: "bot",
-            text: (t as any).errorGeneric || "Hmm, I couldn't process that. Try asking in a different way.",
+            text: t.errorGeneric || "Hmm, I couldn't process that. Try asking in a different way.",
           },
         ]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading, decisionState.aiContext, language, t.errorGeneric]);
 
   return (
     <div className="flex flex-col h-[500px] bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 backdrop-blur-md overflow-hidden">
@@ -117,11 +116,16 @@ export const Chat = () => {
           <Bot className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h3 className="font-bold text-white text-lg leading-tight">
-            Chunaav AI
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-white text-lg leading-tight">
+              Chunaav AI
+            </h3>
+            <span className="bg-white/20 text-[10px] text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider backdrop-blur-sm border border-white/10">
+              Powered by Google Gemini
+            </span>
+          </div>
           <p className="text-blue-100 text-xs">
-            {(t as any).aiSubtitle}
+            {t.aiSubtitle}
           </p>
         </div>
       </div>
@@ -165,7 +169,7 @@ export const Chat = () => {
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
               <Bot className="h-4 w-4 text-blue-600" />
             </div>
-            <div className="p-3 bg-white rounded-2xl flex gap-1">
+            <div className="p-3 bg-white dark:bg-gray-700 rounded-2xl flex gap-1 shadow-sm border border-gray-100 dark:border-gray-600">
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-150"></div>
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-300"></div>
@@ -177,19 +181,21 @@ export const Chat = () => {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t dark:border-gray-700">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={(t as any).chatPlaceholder || "Ask about voting, eligibility, documents..."}
-            className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 text-sm focus:outline-none dark:text-white"
+            placeholder={t.chatPlaceholder || "Ask about voting, eligibility, documents..."}
+            className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 text-sm focus:outline-none dark:text-white border border-transparent focus:border-blue-500"
+            aria-label="Chat input"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="bg-blue-600 text-white p-2 rounded-full disabled:opacity-50"
+            className="bg-blue-600 text-white p-2 rounded-full disabled:opacity-50 transition-transform active:scale-95"
+            aria-label="Send message"
           >
             <Send className="h-5 w-5" />
           </button>
@@ -198,3 +204,4 @@ export const Chat = () => {
     </div>
   );
 };
+

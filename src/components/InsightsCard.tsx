@@ -6,18 +6,22 @@ import {
   Lightbulb,
   Clock,
   TrendingUp,
-  AlertTriangle,
+  AlertCircle,
   ExternalLink,
   ShieldAlert,
-  AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { logger } from "../utils/logger";
+import { useCallback } from "react";
 
 export const InsightsCard = () => {
-  const { profile, decisionState } = useUser();
+  const { decisionState } = useUser();
   const { t } = useLanguage();
 
-
+  const handleApplyNow = useCallback(() => {
+    logger.event("INSIGHTS_APPLY_VOTER_ID_CLICK");
+    window.open("https://voters.eci.gov.in/", "_blank");
+  }, []);
 
   // ── Under 18: Not Eligible state ──
   if (decisionState.status === "not_eligible") {
@@ -25,7 +29,7 @@ export const InsightsCard = () => {
       <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 shadow-xl text-white">
         <h3 className="font-bold mb-4 flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-red-200" />
-          {(t as any).notEligible}
+          {t.notEligible || "Not Eligible"}
         </h3>
         <div className="space-y-4">
           <motion.div
@@ -34,10 +38,10 @@ export const InsightsCard = () => {
             className="bg-white/10 rounded-lg p-4 backdrop-blur-sm border border-white/20"
           >
             <p className="font-medium text-sm">
-              {(t as any).underageMsg}
+              {t.underageMsg || "You must be 18 to vote"}
             </p>
             <p className="text-xs text-red-100 mt-2">
-              {(t as any).underageSubMsg}
+              {t.underageSubMsg || "Check back when you're eligible!"}
             </p>
           </motion.div>
         </div>
@@ -51,7 +55,7 @@ export const InsightsCard = () => {
     <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 shadow-xl text-white">
       <h3 className="font-bold text-white mb-6 flex items-center gap-2">
         <Lightbulb className="h-5 w-5 text-yellow-300" />
-        {(t as any).yourInsights}
+        {t.yourInsights || "Your Insights"}
       </h3>
 
       <div className="space-y-4">
@@ -98,11 +102,12 @@ export const InsightsCard = () => {
 
             {/* Apply Now button */}
             <button
-              onClick={() => { alert("Redirecting to official Election Commission portal..."); window.open("https://voters.eci.gov.in/", "_blank"); }}
+              onClick={handleApplyNow}
+              aria-label="Apply for Voter ID on official portal"
               className="mt-3 inline-flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors shadow-sm"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              {(t as any).applyVoterIdAction}
+              {t.applyVoterIdAction || "Apply Now"}
             </button>
           </motion.div>
         )}
@@ -151,3 +156,4 @@ export const InsightsCard = () => {
     </div>
   );
 };
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 import { useLanguage } from "@/context/LanguageContext";
@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 const indianLocations = [
   "Mumbai, Maharashtra",
@@ -42,29 +43,30 @@ export default function ManualSetupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ age?: string; location?: string }>({});
 
-  const validate = () => {
+  const validate = useCallback(() => {
     const newErrors: { age?: string; location?: string } = {};
     const ageNum = parseInt(age);
 
     if (!age || isNaN(ageNum)) {
-      newErrors.age = (t as any).errorAge || "Please enter a valid age";
+      newErrors.age = t.errorAge || "Please enter a valid age";
     } else if (ageNum < 1 || ageNum > 120) {
-      newErrors.age = (t as any).errorAge || "Please enter a realistic age";
+      newErrors.age = t.errorAge || "Please enter a realistic age";
     }
 
     if (!location.trim()) {
-      newErrors.location = (t as any).errorLocation || "Please select or enter your location";
+      newErrors.location = t.errorLocation || "Please select or enter your location";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [age, location, t]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) return;
 
+    logger.event("MANUAL_SETUP_SUBMIT", { age: parseInt(age), location, hasAadhaar, hasVoterId });
     setIsSubmitting(true);
 
     // Small delay for visual feedback
@@ -79,7 +81,11 @@ export default function ManualSetupPage() {
 
     // Redirect to dashboard
     router.push("/");
-  };
+  }, [validate, age, location, hasAadhaar, hasVoterId, manualSetup, router]);
+
+  const handleBack = useCallback(() => {
+    router.push("/");
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 flex items-center justify-center px-4 py-8">
@@ -91,11 +97,12 @@ export default function ManualSetupPage() {
       >
         {/* Back button */}
         <button
-          onClick={() => router.push("/")}
+          onClick={handleBack}
+          aria-label="Back to dashboard"
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
-          {(t as any).backToDashboard}
+          {t.backToDashboard || "Back to Dashboard"}
         </button>
 
         {/* Header */}
@@ -104,10 +111,10 @@ export default function ManualSetupPage() {
             <UserCircle className="h-10 w-10 text-blue-600 dark:text-blue-400" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {(t as any).manualSetupTitle}
+            {t.manualSetupTitle || "Quick Setup"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-xs mx-auto">
-            {(t as any).manualSetupDesc}
+            {t.manualSetupDesc || "Tell us a few details"}
           </p>
         </div>
 
@@ -115,11 +122,12 @@ export default function ManualSetupPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Age Input */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="age-input" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <UserCircle className="h-4 w-4 text-blue-500" />
-              {(t as any).ageLabel}
+              {t.ageLabel || "Your Age"}
             </label>
             <input
+              id="age-input"
               type="number"
               min="1"
               max="120"
@@ -129,6 +137,7 @@ export default function ManualSetupPage() {
                 if (errors.age) setErrors((prev) => ({ ...prev, age: undefined }));
               }}
               placeholder="e.g. 19"
+              aria-label="Enter your age"
               className={`w-full bg-gray-50 dark:bg-gray-700/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-colors ${
                 errors.age
                   ? "border-red-400 dark:border-red-500"
@@ -142,24 +151,26 @@ export default function ManualSetupPage() {
 
           {/* Location Input */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="location-select" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <MapPin className="h-4 w-4 text-blue-500" />
-              {(t as any).locationLabel}
+              {t.locationLabel || "Your Location"}
             </label>
             <select
+              id="location-select"
               value={location}
               onChange={(e) => {
                 setLocation(e.target.value);
                 if (errors.location)
                   setErrors((prev) => ({ ...prev, location: undefined }));
               }}
+              aria-label="Select your location"
               className={`w-full bg-gray-50 dark:bg-gray-700/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-colors appearance-none ${
                 errors.location
                   ? "border-red-400 dark:border-red-500"
                   : "border-gray-200 dark:border-gray-600"
               }`}
             >
-              <option value="">{(t as any).selectCity}</option>
+              <option value="">{t.selectCity || "Select City"}</option>
               {indianLocations.map((loc) => (
                 <option key={loc} value={loc}>
                   {loc}
@@ -174,7 +185,7 @@ export default function ManualSetupPage() {
           {/* Document Toggles */}
           <div className="space-y-3">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {(t as any).docStatusLabel}
+              {t.docStatusLabel || "Document Status"}
             </p>
 
             {/* Aadhaar Toggle */}
@@ -183,10 +194,10 @@ export default function ManualSetupPage() {
                 <CreditCard className="h-5 w-5 text-orange-500" />
                 <div>
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    {(t as any).aadhaarLabel}
+                    {t.aadhaarLabel || "Aadhaar Card"}
                   </span>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {(t as any).aadhaarDesc}
+                    {t.aadhaarDesc || "Do you have an Aadhaar card?"}
                   </p>
                 </div>
               </div>
@@ -196,6 +207,7 @@ export default function ManualSetupPage() {
                   checked={hasAadhaar}
                   onChange={(e) => setHasAadhaar(e.target.checked)}
                   className="sr-only"
+                  aria-label="Aadhaar card availability"
                 />
                 <div
                   className={`w-11 h-6 rounded-full transition-colors duration-200 ${
@@ -219,10 +231,10 @@ export default function ManualSetupPage() {
                 <Vote className="h-5 w-5 text-purple-500" />
                 <div>
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    {(t as any).voterIdLabel}
+                    {t.voterIdLabel || "Voter ID (EPIC)"}
                   </span>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {(t as any).voterIdDesc}
+                    {t.voterIdDesc || "Do you have a Voter ID card?"}
                   </p>
                 </div>
               </div>
@@ -232,6 +244,7 @@ export default function ManualSetupPage() {
                   checked={hasVoterId}
                   onChange={(e) => setHasVoterId(e.target.checked)}
                   className="sr-only"
+                  aria-label="Voter ID availability"
                 />
                 <div
                   className={`w-11 h-6 rounded-full transition-colors duration-200 ${
@@ -256,17 +269,18 @@ export default function ManualSetupPage() {
             disabled={isSubmitting}
             whileHover={{ scale: isSubmitting ? 1 : 1.01 }}
             whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+            aria-label="Complete setup and go to dashboard"
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                {(t as any).settingUpProfile}
+                {t.settingUpProfile || "Setting up..."}
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-5 w-5" />
-                {(t as any).continueDashboard}
+                {t.continueDashboard || "Continue"}
               </>
             )}
           </motion.button>
@@ -280,3 +294,4 @@ export default function ManualSetupPage() {
     </div>
   );
 }
+

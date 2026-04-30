@@ -14,6 +14,8 @@ import {
   X,
   Mail
 } from "lucide-react";
+import { logger } from "@/utils/logger";
+
 
 export const ActionHub = () => {
   const { t } = useLanguage();
@@ -48,7 +50,7 @@ export const ActionHub = () => {
       shadow: "group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)]",
       title: tHub.startRegistration,
       desc: tHub.startRegistrationDesc,
-      action: () => window.open("https://voters.eci.gov.in/", "_blank"),
+      action: () => window.open("https://voters.eci.gov.in/", "_blank", "noopener,noreferrer"),
       span: "sm:col-span-2 lg:col-span-2",
     },
     {
@@ -136,9 +138,14 @@ export const ActionHub = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, duration: 0.5, ease: "easeOut" }}
-              onClick={item.action}
+              onClick={() => {
+                logger.event("ACTION_HUB_CLICK", { action: item.key });
+                item.action();
+              }}
+              aria-label={item.title}
               className={`group flex items-center text-left gap-4 p-5 h-full rounded-3xl border transition-all duration-300 ease-out shadow-sm hover:shadow-xl hover:scale-[1.03] bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 ${item.border} hover:border-transparent`}
             >
+
               <div className={`p-3.5 rounded-2xl ${item.bg} transition-all duration-300 group-hover:scale-110 ${item.shadow}`}>
                 <Icon className={`h-6 w-6 ${item.color}`} strokeWidth={2.5} />
               </div>
@@ -179,7 +186,9 @@ export const ActionHub = () => {
                 <button
                   onClick={() => setShowHelpline(false)}
                   className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-gray-100 dark:bg-gray-700 rounded-full p-2"
+                  aria-label="Close"
                 >
+
                   <X className="h-5 w-5" />
                 </button>
               </div>
